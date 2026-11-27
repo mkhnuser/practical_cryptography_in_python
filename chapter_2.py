@@ -141,16 +141,135 @@ Listing 2-6. Change to SHA-256
 Listing 2-7. Scrypt Generate
 """
 
-import os
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from cryptography.hazmat.backends import default_backend
+# import os
+# from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+# from cryptography.hazmat.backends import default_backend
+#
+#
+# # NOTE:
+# # 1. Salt has to be generated manually in this case.
+# # 2. Be sure to save compute parameters as well as salt to a database.
+# # 3. The default backend is used, which might be OpenSSL or another library.
+# salt = os.urandom(16)
+# kdf = Scrypt(salt=salt, length=32, n=2**14, r=8, p=1, backend=default_backend())
+# derived_key = kdf.derive(b"my great password")
+# print(derived_key)
 
 
-# NOTE:
-# 1. Salt has to be generated manually in this case.
-# 2. Be sure to save compute parameters as well as salt.
-# 3. The default backend is used, which might be OpenSSL or another library.
-salt = os.urandom(16)
-kdf = Scrypt(salt=salt, length=32, n=2**14, r=8, p=1, backend=default_backend())
-derived_key = kdf.derive(b"my great password")
-print(derived_key)
+"""
+Listing 2-9. Alphabet Permutations
+"""
+
+
+def generate(alphabet: str, max_len: int):
+    if max_len <= 0:
+        return
+
+    for c in alphabet:
+        yield c
+
+    for c in alphabet:
+        for next_ in generate(alphabet, max_len - 1):
+            yield c + next_
+
+
+# if __name__ == "__main__":
+#     for output in generate("abc", 2):
+#         print(output)
+
+
+"""
+EXERCISE 2.5. THE POWER OF ONE
+"""
+
+
+# import string
+# import random
+# import hashlib
+# import timeit
+#
+#
+# def compute() -> None:
+#     preimage_seed = random.choice(string.ascii_lowercase)
+#     preimage_seed = preimage_seed.encode()
+#     test_hash = hashlib.md5(preimage_seed).hexdigest()
+#
+#     for char in generate(string.ascii_lowercase, 1):
+#         char = char.encode()
+#         candidate_hash = hashlib.md5(char).hexdigest()
+#
+#         if candidate_hash == test_hash:
+#             print(char, candidate_hash)
+#             return
+#
+#     raise Exception("Shouldn't be here!")
+#
+#
+# if __name__ == "__main__":
+#     print(timeit.timeit(compute, number=10))
+
+
+"""
+EXERCISE 2.6. THE POWER OF ONE, BUT BIGGER!
+"""
+
+
+# import string
+# import random
+# import hashlib
+# import timeit
+#
+#
+# def compute() -> None:
+#     preimage_seed = random.choice(string.printable)
+#     preimage_seed = preimage_seed.encode()
+#     test_hash = hashlib.md5(preimage_seed).hexdigest()
+#
+#     for char in generate(string.printable, 1):
+#         char = char.encode()
+#         candidate_hash = hashlib.md5(char).hexdigest()
+#
+#         if candidate_hash == test_hash:
+#             print(char, candidate_hash)
+#             return
+#
+#     raise Exception("Shouldn't be here!")
+#
+#
+# if __name__ == "__main__":
+#     print(timeit.timeit(compute, number=10))
+
+
+"""
+EXERCISE 2.7. PASSWORD LENGTH’S EFFECTS ON ATTACK TIME
+"""
+
+
+import string
+import random
+import hashlib
+import timeit
+
+
+def compute() -> None:
+    # NOTE: A two-letter password is now used.
+    preimage_seed = random.choice(string.printable) + random.choice(string.printable)
+    preimage_seed = preimage_seed.encode()
+    test_hash = hashlib.md5(preimage_seed).hexdigest()
+
+    for char in generate(string.printable, 2):
+        char = char.encode()
+        candidate_hash = hashlib.md5(char).hexdigest()
+
+        if candidate_hash == test_hash:
+            print(char, candidate_hash)
+            return
+
+    raise Exception("Shouldn't be here!")
+
+
+if __name__ == "__main__":
+    print(timeit.timeit(compute, number=10))
+
+
+# NOTE: The result: 0.0001, then 0.0005, then 0.05.
