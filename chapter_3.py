@@ -121,214 +121,364 @@ Listing 3-2. AES ECB KATs
 """
 EXERCISE 3.5. ALL NIST KATS
 """
+#
+# # NOTE: I only test ECB KATS.
+#
+# import zipfile
+# import pathlib
+# from typing import Literal
+#
+# from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+# from cryptography.hazmat.backends import default_backend
+#
+#
+# ENCRYPT_HEADER = "[ENCRYPT]"
+# DECREPT_HEADER = "[DECRYPT]"
+# KEY_ATTRIBUTE = "KEY"
+# PLAINTEXT_ATTRIBUTE = "PLAINTEXT"
+# CIPHERTEXT_ATTRIBUTE = "CIPHERTEXT"
+# COUNT_ATTRIBUTE = "COUNT"
+#
+#
+# artifacts_dir_path = pathlib.Path("./artifacts/")
+# kats_zip_archive_path = artifacts_dir_path / "KAT_AES.zip"
+#
+# with zipfile.ZipFile(kats_zip_archive_path) as z:
+#     z.extractall(artifacts_dir_path / "KAT_AES_responses")
+#
+#
+# def verify_test_case(
+#     key: bytes, plaintext: str, ciphertext: str, transformation_direction: str
+# ) -> None:
+#     aes_cipher = Cipher(
+#         algorithm=algorithms.AES(key),
+#         mode=modes.ECB(),
+#         backend=default_backend(),
+#     )
+#     aes_encryptor = aes_cipher.encryptor()
+#     aes_decryptor = aes_cipher.decryptor()
+#
+#     if transformation_direction == "encryption":
+#         encrypted_data = (
+#             aes_encryptor.update(bytes.fromhex(plaintext)) + aes_encryptor.finalize()
+#         )
+#         encrypted_data = encrypted_data.hex()
+#         assert encrypted_data == ciphertext
+#     elif transformation_direction == "decryption":
+#         decrypted_data = (
+#             aes_decryptor.update(bytes.fromhex(ciphertext)) + aes_decryptor.finalize()
+#         )
+#         decrypted_data = decrypted_data.hex()
+#         assert decrypted_data == plaintext
+#     else:
+#         raise RuntimeError("Invalid Transformation Direction.")
+#
+#
+# def try_running_a_previous_test(
+#     has_a_test_been_assembled: bool,
+#     key: bytes | None,
+#     plaintext: str | None,
+#     ciphertext: str | None,
+#     transformation_direction: str | None,
+#     passed_tests_counter: int,
+# ) -> None | tuple:
+#     if not has_a_test_been_assembled:
+#         return
+#
+#     assert key is not None
+#     assert plaintext is not None
+#     assert ciphertext is not None
+#     assert transformation_direction is not None
+#
+#     verify_test_case(key, plaintext, ciphertext, transformation_direction)
+#
+#     has_a_test_been_assembled = False
+#     key = None
+#     plaintext = None
+#     ciphertext = None
+#
+#     passed_tests_counter += 1
+#
+#     return (
+#         has_a_test_been_assembled,
+#         key,
+#         plaintext,
+#         ciphertext,
+#         transformation_direction,
+#         passed_tests_counter,
+#     )
+#
+#
+# def verify_ecb_files() -> tuple:
+#     response_file_paths = (artifacts_dir_path / "KAT_AES_responses").glob("ECB*.rsp")
+#     global_tests_counter = 0
+#     global_count_attributes_counter = 0
+#
+#     for response_file_path in response_file_paths:
+#         transformation_direction: Literal["encryption", "decryption", None] = None
+#         key: bytes | None = None
+#         plaintext: str | None = None
+#         ciphertext: str | None = None
+#         passed_tests_counter_per_file = 0
+#         has_a_test_been_assembled: bool = False
+#
+#         with response_file_path.open() as response_file:
+#             for line in response_file:
+#                 line = line.strip()
+#
+#                 if not line or line.startswith("#"):
+#                     continue
+#
+#                 # WARNING: Just before we change a transformation direction,
+#                 # run a test, if one is assembled.
+#                 if ENCRYPT_HEADER in line:
+#                     previous_test_run_result = try_running_a_previous_test(
+#                         has_a_test_been_assembled,
+#                         key,
+#                         plaintext,
+#                         ciphertext,
+#                         transformation_direction,
+#                         passed_tests_counter_per_file,
+#                     )
+#                     if previous_test_run_result is not None:
+#                         (
+#                             has_a_test_been_assembled,
+#                             key,
+#                             plaintext,
+#                             ciphertext,
+#                             transformation_direction,
+#                             passed_tests_counter_per_file,
+#                         ) = previous_test_run_result
+#                     transformation_direction = "encryption"
+#                     continue
+#                 elif DECREPT_HEADER in line:
+#                     previous_test_run_result = try_running_a_previous_test(
+#                         has_a_test_been_assembled,
+#                         key,
+#                         plaintext,
+#                         ciphertext,
+#                         transformation_direction,
+#                         passed_tests_counter_per_file,
+#                     )
+#                     if previous_test_run_result is not None:
+#                         (
+#                             has_a_test_been_assembled,
+#                             key,
+#                             plaintext,
+#                             ciphertext,
+#                             transformation_direction,
+#                             passed_tests_counter_per_file,
+#                         ) = previous_test_run_result
+#                     transformation_direction = "decryption"
+#                     continue
+#
+#                 # NOTE: When a new counter is encountered,
+#                 # run a test, if one is assembled.
+#                 if COUNT_ATTRIBUTE in line:
+#                     global_count_attributes_counter += 1
+#                     previous_test_run_result = try_running_a_previous_test(
+#                         has_a_test_been_assembled,
+#                         key,
+#                         plaintext,
+#                         ciphertext,
+#                         transformation_direction,
+#                         passed_tests_counter_per_file,
+#                     )
+#
+#                     if previous_test_run_result is not None:
+#                         (
+#                             has_a_test_been_assembled,
+#                             key,
+#                             plaintext,
+#                             ciphertext,
+#                             transformation_direction,
+#                             passed_tests_counter_per_file,
+#                         ) = previous_test_run_result
+#
+#                     has_a_test_been_assembled = False
+#                     key = None
+#                     plaintext = None
+#                     ciphertext = None
+#
+#                 elif KEY_ATTRIBUTE in line:
+#                     key_str = line.split("=")[-1].strip()
+#                     key = bytes.fromhex(key_str)
+#                 elif PLAINTEXT_ATTRIBUTE in line:
+#                     plaintext = line.split("=")[-1].strip()
+#                 elif CIPHERTEXT_ATTRIBUTE in line:
+#                     ciphertext = line.split("=")[-1].strip()
+#
+#                 if key is not None and plaintext is not None and ciphertext is not None:
+#                     has_a_test_been_assembled = True
+#
+#             # WARNING: Don't forget to validate the last file line.
+#             previous_test_run_result = try_running_a_previous_test(
+#                 has_a_test_been_assembled,
+#                 key,
+#                 plaintext,
+#                 ciphertext,
+#                 transformation_direction,
+#                 passed_tests_counter_per_file,
+#             )
+#             if previous_test_run_result is not None:
+#                 *_, passed_tests_counter_per_file = previous_test_run_result
+#
+#             global_tests_counter += passed_tests_counter_per_file
+#
+#     return global_tests_counter, global_count_attributes_counter
+#
+#
+# if __name__ == "__main__":
+#     all_passed_tests, all_counts = verify_ecb_files()
+#     print(all_passed_tests, all_counts)
+#     assert all_passed_tests == all_counts
 
-# NOTE: I only test ECB KATS.
+"""
+A padding follow-up.
+"""
 
-import zipfile
-import pathlib
-from typing import Literal
+# # NEVER USE: ECB is not secure!
+# from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+# from cryptography.hazmat.backends import default_backend
+#
+# # Alice and Bob's Shared Key
+# test_key = bytes.fromhex("00112233445566778899AABBCCDDEEFF")
+#
+# aesCipher = Cipher(algorithms.AES(test_key), modes.ECB(), backend=default_backend())
+# aesEncryptor = aesCipher.encryptor()
+# aesDecryptor = aesCipher.decryptor()
+#
+# message = b"""
+# FROM: FIELD AGENT ALICE
+# TO: FIELD AGENT BOB
+# RE: Meeting
+# DATE: 2001-1-1
+#
+# Meet me today at the docks at 2300."""
+#
+# message += b"E" * (-len(message) % 16)
+# ciphertext = aesEncryptor.update(message)
+# print(ciphertext)
 
+"""
+EXERCISE 3.6. SENDING BOB A MESSAGE
+"""
+
+# NOTE: The exercise is straightforward.
+
+"""
+EXERCISE 3.7. SENDING BOB A FAKE MESSAGE
+"""
+
+# NEVER USE: ECB is not secure!
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
 
 
-ENCRYPT_HEADER = "[ENCRYPT]"
-DECREPT_HEADER = "[DECRYPT]"
-KEY_ATTRIBUTE = "KEY"
-PLAINTEXT_ATTRIBUTE = "PLAINTEXT"
-CIPHERTEXT_ATTRIBUTE = "CIPHERTEXT"
-COUNT_ATTRIBUTE = "COUNT"
+test_key = bytes.fromhex("00112233445566778899AABBCCDDEEFF")
+aes_cipher = Cipher(algorithms.AES(test_key), modes.ECB())
 
 
-artifacts_dir_path = pathlib.Path("./artifacts/")
-kats_zip_archive_path = artifacts_dir_path / "KAT_AES.zip"
+message_1 = """
+FROM: FIELD AGENT ALICE
+TO: FIELD AGENT BOB
+RE: Meeting
+DATE: 2001-1-1
 
-with zipfile.ZipFile(kats_zip_archive_path) as z:
-    z.extractall(artifacts_dir_path / "KAT_AES_responses")
+Meet me today at the docks at 2300."""
 
+message_2 = """
+FROM: FIELD AGENT ALICE
+TO: FIELD AGENT BOB
+RE: Meeting
+DATE: 2001-2-2
 
-def verify_test_case(
-    key: bytes, plaintext: str, ciphertext: str, transformation_direction: str
-) -> None:
-    aes_cipher = Cipher(
-        algorithm=algorithms.AES(key),
-        mode=modes.ECB(),
-        backend=default_backend(),
-    )
+Meet me today at the theater at 1200."""
+
+message_1 = message_1.encode()
+message_2 = message_2.encode()
+
+for m in (message_1, message_2):
     aes_encryptor = aes_cipher.encryptor()
     aes_decryptor = aes_cipher.decryptor()
 
-    if transformation_direction == "encryption":
-        encrypted_data = (
-            aes_encryptor.update(bytes.fromhex(plaintext)) + aes_encryptor.finalize()
-        )
-        encrypted_data = encrypted_data.hex()
-        assert encrypted_data == ciphertext
-    elif transformation_direction == "decryption":
-        decrypted_data = (
-            aes_decryptor.update(bytes.fromhex(ciphertext)) + aes_decryptor.finalize()
-        )
-        decrypted_data = decrypted_data.hex()
-        assert decrypted_data == plaintext
-    else:
-        raise RuntimeError("Invalid Transformation Direction.")
+    # NOTE: AES operates in blocks of the size of 16 bytes = 128 bits.
+    # Because of this, your data has to be a multiple of 16, since blocks have to be full.
+    block_size_in_bits = 16 * 8
+    padder = padding.PKCS7(block_size_in_bits).padder()
+    padded_data = padder.update(m) + padder.finalize()
+
+    # NOTE: Encrypt the stream.
+    encrypted_stream = b""
+
+    for L in range(0, len(padded_data), 16):
+        R = L + 16
+        chunk = padded_data[L:R]
+        encrypted_stream += aes_encryptor.update(chunk)
+
+    aes_encryptor.finalize()
+
+    # NOTE: Decrypt the stream.
+    decrypted_stream = b""
+
+    for L in range(0, len(encrypted_stream), 16):
+        R = L + 16
+        chunk = encrypted_stream[L:R]
+        decrypted_stream += aes_decryptor.update(chunk)
+
+    aes_decryptor.finalize()
+
+    # NOTE: Remove PKCS7 padding.
+    unpadder = padding.PKCS7(block_size_in_bits).unpadder()
+    plaintext = unpadder.update(decrypted_stream) + unpadder.finalize()
+    print(plaintext.decode())
 
 
-def try_running_a_previous_test(
-    has_a_test_been_assembled: bool,
-    key: bytes | None,
-    plaintext: str | None,
-    ciphertext: str | None,
-    transformation_direction: str | None,
-    passed_tests_counter: int,
-) -> None | tuple:
-    if not has_a_test_been_assembled:
-        return
-
-    assert key is not None
-    assert plaintext is not None
-    assert ciphertext is not None
-    assert transformation_direction is not None
-
-    verify_test_case(key, plaintext, ciphertext, transformation_direction)
-
-    has_a_test_been_assembled = False
-    key = None
-    plaintext = None
-    ciphertext = None
-
-    passed_tests_counter += 1
-
-    return (
-        has_a_test_been_assembled,
-        key,
-        plaintext,
-        ciphertext,
-        transformation_direction,
-        passed_tests_counter,
-    )
+# NOTE: An example of a cut-and-paste attack follows.
 
 
-def verify_ecb_files() -> tuple:
-    response_file_paths = (artifacts_dir_path / "KAT_AES_responses").glob("ECB*.rsp")
-    global_tests_counter = 0
-    global_count_attributes_counter = 0
+# NOTE:
+# The code above can be used to obtain:
+# message_1 ciphertext:
+# 0aee9b602c574044778d4f6de3481cb90f3b683d1af60ed69396949eaf293eb244760fa0bb791339d557b43b250ac27c8430e159229e4bf5c7b39fe1fb72cfaba5c7412fda6ac67fe63093168f474913dbd386db053613be242c6059539f93dae5e98a5471100f3fe8febcdcb1ff119c
+# message_2 ciphertext:
+# 0aee9b602c574044778d4f6de3481cb90f3b683d1af60ed69396949eaf293eb244760fa0bb791339d557b43b250ac27c8430e159229e4bf5c7b39fe1fb72cfabebe95d01d0207a8e9a1580563515c660738188d94d418847fd6e357a1ef861d5f2b80b2bffd06358d6f02c126a9fb642
+# messages' common part:
+# 0aee9b602c574044778d4f6de3481cb90f3b683d1af60ed69396949eaf293eb244760fa0bb791339d557b43b250ac27c8430e159229e4bf5c7b39fe1fb72cfab
+# message_1 unique part:
+# a5c7412fda6ac67fe63093168f474913dbd386db053613be242c6059539f93dae5e98a5471100f3fe8febcdcb1ff119c
+# message_2 unique part:
+# ebe95d01d0207a8e9a1580563515c660738188d94d418847fd6e357a1ef861d5f2b80b2bffd06358d6f02c126a9fb642
 
-    for response_file_path in response_file_paths:
-        transformation_direction: Literal["encryption", "decryption", None] = None
-        key: bytes | None = None
-        plaintext: str | None = None
-        ciphertext: str | None = None
-        passed_tests_counter_per_file = 0
-        has_a_test_been_assembled: bool = False
+# NOTE: Let's create a new message.
+# Let's use common part, some part of message 1, and some part of message 2.
+message_common_part = "0aee9b602c574044778d4f6de3481cb90f3b683d1af60ed69396949eaf293eb244760fa0bb791339d557b43b250ac27c8430e159229e4bf5c7b39fe1fb72cfab"
+message_1_unique_part = "a5c7412fda6ac67fe63093168f474913dbd386db053613be242c6059539f93dae5e98a5471100f3fe8febcdcb1ff119c"
+message_2_unique_part = "ebe95d01d0207a8e9a1580563515c660738188d94d418847fd6e357a1ef861d5f2b80b2bffd06358d6f02c126a9fb642"
 
-        with response_file_path.open() as response_file:
-            for line in response_file:
-                line = line.strip()
+for break_point_index in range(1, len(message_1_unique_part)):
+    message_1_part = message_1_unique_part[:break_point_index]
+    message_2_part = message_2_unique_part[break_point_index:]
+    malformed_ciphertext = message_common_part + message_1_part + message_2_part
+    malformed_ciphertext = bytes.fromhex(malformed_ciphertext)
 
-                if not line or line.startswith("#"):
-                    continue
+    aes_decryptor = aes_cipher.decryptor()
 
-                # WARNING: Just before we change a transformation direction,
-                # run a test, if one is assembled.
-                if ENCRYPT_HEADER in line:
-                    previous_test_run_result = try_running_a_previous_test(
-                        has_a_test_been_assembled,
-                        key,
-                        plaintext,
-                        ciphertext,
-                        transformation_direction,
-                        passed_tests_counter_per_file,
-                    )
-                    if previous_test_run_result is not None:
-                        (
-                            has_a_test_been_assembled,
-                            key,
-                            plaintext,
-                            ciphertext,
-                            transformation_direction,
-                            passed_tests_counter_per_file,
-                        ) = previous_test_run_result
-                    transformation_direction = "encryption"
-                    continue
-                elif DECREPT_HEADER in line:
-                    previous_test_run_result = try_running_a_previous_test(
-                        has_a_test_been_assembled,
-                        key,
-                        plaintext,
-                        ciphertext,
-                        transformation_direction,
-                        passed_tests_counter_per_file,
-                    )
-                    if previous_test_run_result is not None:
-                        (
-                            has_a_test_been_assembled,
-                            key,
-                            plaintext,
-                            ciphertext,
-                            transformation_direction,
-                            passed_tests_counter_per_file,
-                        ) = previous_test_run_result
-                    transformation_direction = "decryption"
-                    continue
+    # NOTE: Decrypt the stream.
+    decrypted_stream = b""
 
-                # NOTE: When a new counter is encountered,
-                # run a test, if one is assembled.
-                if COUNT_ATTRIBUTE in line:
-                    global_count_attributes_counter += 1
-                    previous_test_run_result = try_running_a_previous_test(
-                        has_a_test_been_assembled,
-                        key,
-                        plaintext,
-                        ciphertext,
-                        transformation_direction,
-                        passed_tests_counter_per_file,
-                    )
+    for L in range(0, len(malformed_ciphertext), 16):
+        R = L + 16
+        chunk = malformed_ciphertext[L:R]
+        decrypted_stream += aes_decryptor.update(chunk)
 
-                    if previous_test_run_result is not None:
-                        (
-                            has_a_test_been_assembled,
-                            key,
-                            plaintext,
-                            ciphertext,
-                            transformation_direction,
-                            passed_tests_counter_per_file,
-                        ) = previous_test_run_result
+    aes_decryptor.finalize()
 
-                    has_a_test_been_assembled = False
-                    key = None
-                    plaintext = None
-                    ciphertext = None
-
-                elif KEY_ATTRIBUTE in line:
-                    key_str = line.split("=")[-1].strip()
-                    key = bytes.fromhex(key_str)
-                elif PLAINTEXT_ATTRIBUTE in line:
-                    plaintext = line.split("=")[-1].strip()
-                elif CIPHERTEXT_ATTRIBUTE in line:
-                    ciphertext = line.split("=")[-1].strip()
-
-                if key is not None and plaintext is not None and ciphertext is not None:
-                    has_a_test_been_assembled = True
-
-            # WARNING: Don't forget to validate the last file line.
-            previous_test_run_result = try_running_a_previous_test(
-                has_a_test_been_assembled,
-                key,
-                plaintext,
-                ciphertext,
-                transformation_direction,
-                passed_tests_counter_per_file,
-            )
-            if previous_test_run_result is not None:
-                *_, passed_tests_counter_per_file = previous_test_run_result
-
-            global_tests_counter += passed_tests_counter_per_file
-
-    return global_tests_counter, global_count_attributes_counter
-
-
-if __name__ == "__main__":
-    all_passed_tests, all_counts = verify_ecb_files()
-    print(all_passed_tests, all_counts)
-    assert all_passed_tests == all_counts
+    try:
+        # NOTE: Remove PKCS7 padding.
+        block_size_in_bits = 16 * 8
+        unpadder = padding.PKCS7(block_size_in_bits).unpadder()
+        plaintext = unpadder.update(decrypted_stream) + unpadder.finalize()
+        print(plaintext.decode())
+    except Exception:
+        continue
