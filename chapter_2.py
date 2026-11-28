@@ -1,6 +1,4 @@
-"""
-Listing 2-1. Intro to hashlib
-"""
+"""Listing 2-1. Intro to hashlib"""
 
 # import hashlib
 #
